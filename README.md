@@ -1,6 +1,6 @@
 # Multi Sensor Fusion 2
 
-A full rewrite and redesign of the [Multi Sensor Fusion package](https://www.google.com) by ETH-ASL.
+A full rewrite and redesign of the [Multi Sensor Fusion package](https://github.com/ethz-asl/ethzasl_msf) by ETH-ASL.
 
 ## Features added to MSF
 
