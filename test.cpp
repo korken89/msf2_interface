@@ -87,54 +87,60 @@ struct msf2_specs
 };
 
 template <typename Spec>
-struct msf2
+class msf2
 {
-    // Convenience functions to get parts of state vector
-    template <typename T>
-    constexpr std::size_t get()
-    {
-        static_assert(std::is_base_of<sensor_base_tag, T>::value,
-                      "Only sensors and state enums can be an argument in get< ... >().");
-        static_assert(T::num_linear_states::value > 0,
-                      "Can't get sensor state, this sensor has no extra linear states defined.");
+private:
+  typename Spec::sensor_storage_t sensor_storage;
 
-        return 9001;
-    }
+public:
+  // Convenience functions to get parts of state vector
+  template <typename T>
+  constexpr std::size_t get()
+  {
+      static_assert(std::is_base_of<sensor_base_tag, T>::value,
+                    "Only sensors and state enums can be an argument in get< ... >().");
+      static_assert(T::num_linear_states::value > 0,
+                    "Can't get sensor state, this sensor has no extra linear states defined.");
 
-    template <typename T>
-    constexpr std::size_t get_rot()
-    {
-        static_assert(std::is_base_of<sensor_base_tag, T>::value,
-                      "Only sensors and state enums can be an argument in get< ... >().");
-        static_assert(T::num_rotation_states::value > 0,
-                      "Can't get sensor state, this sensor has no extra rotation states defined.");
+      return 9001;
+  }
 
-        return 10001;
-    }
+  template <typename T>
+  constexpr std::size_t get_rot()
+  {
+      static_assert(std::is_base_of<sensor_base_tag, T>::value,
+                    "Only sensors and state enums can be an argument in get< ... >().");
+      static_assert(T::num_rotation_states::value > 0,
+                    "Can't get sensor state, this sensor has no extra rotation states defined.");
 
-    template <core_states T>
-    constexpr std::size_t get()
-    {
-        return 1;
-    }
+      return 10001;
+  }
 
-    template <core_error_states T>
-    constexpr std::size_t get()
-    {
-        return 2;
-    }
+  template <core_states T>
+  constexpr std::size_t get()
+  {
+      return 1;
+  }
+
+  template <core_error_states T>
+  constexpr std::size_t get()
+  {
+      return 2;
+  }
 };
 
 
 
 
-// Make some sensors
+// Make some sensors (one file/sensor)
 using sensor1 = sensor_base<1, 0, 0>;
 using sensor2 = sensor_base<3, 1, 0>;
 using sensor3 = sensor_base<1, 1, 1>;
 
 // Create an MSF specification from it
 using spec = msf2_specs< sensor1, sensor2, sensor3 >;
+
+// Create the MSF2 filter
 using msf = msf2< spec >;
 
 int main()
