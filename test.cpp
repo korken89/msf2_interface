@@ -55,6 +55,7 @@ template <std::size_t MEASUREMENT_SIZE,
           std::size_t NUM_ROTATION_STATES>
 struct sensor_base : sensor_base_tag
 {
+  using measurement_vector_size = std::integral_constant< std::size_t, MEASUREMENT_SIZE >;
   using num_linear_states = std::integral_constant< std::size_t, NUM_LINEAR_STATES >;
   using num_rotation_states = std::integral_constant< std::size_t, NUM_ROTATION_STATES >;
 };
@@ -143,10 +144,13 @@ using spec = msf2_specs< sensor1, sensor2, sensor3 >;
 // Create the MSF2 filter
 using msf = msf2< spec >;
 
+#include <iostream>
+
 int main()
 {
   msf my_msf;
-
+  std::cout << "val : " << my_msf.get_rot< sensor3 >() << "\n";
+  std::cout << "val2: " << sizeof(sensor3) << "\n";
   // Try get stuff
-  return my_msf.get_rot< sensor3 >();
+  return 0;
 }
