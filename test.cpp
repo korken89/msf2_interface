@@ -133,10 +133,19 @@ public:
 
 
 
-// Make some sensors (one file/sensor)
-using sensor1 = sensor_base<1, 0, 0>;
-using sensor2 = sensor_base<3, 1, 0>;
-using sensor3 = sensor_base<1, 1, 1>;
+// Make some sensors (one file/sensor, not made here)
+// Fake sensor, just to make it happy
+using sensor1 = sensor_base<1,  // Measurement size (1)
+                            0,  // Number of extra linear states
+                            0>; // Number of extra rotational states
+                                //              (1 state = 1 extra quaternion)
+using sensor2 = sensor_base<3,
+                            1,
+                            0>;
+
+using sensor3 = sensor_base<1,
+                            1,
+                            1>;
 
 // Create an MSF specification from it
 using spec = msf2_specs< sensor1, sensor2, sensor3 >;
@@ -149,8 +158,13 @@ using msf = msf2< spec >;
 int main()
 {
   msf my_msf;
-  std::cout << "val : " << my_msf.get_rot< sensor3 >() << "\n";
-  std::cout << "val2: " << sizeof(sensor3) << "\n";
+
+  my_msf.innovte(acc, gyro, dt);
+  my_msf.update< mysensor>( );
+
   // Try get stuff
+  std::cout << "val : " << my_msf.get< core::position >() << "\n";
+  std::cout << "val2: " << sizeof(sensor3) << "\n";
+
   return 0;
 }
