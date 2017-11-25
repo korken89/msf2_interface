@@ -7,13 +7,12 @@
 template<std::size_t... S>
 constexpr std::size_t sum()
 {
-    std::size_t result = 0;
+  std::size_t result = 0;
 
-    for(auto s : { S... })
-        result += s;
+  for (auto s : {S...})
+    result += s;
 
-
-    return result;
+  return result;
 }
 
 template <bool... >
@@ -22,29 +21,32 @@ struct bool_pack {};
 template< bool... Bs>
 constexpr bool all_true()
 {
-    return std::is_same< bool_pack< true, Bs...>, bool_pack< Bs..., true> >::value;
+  return std::is_same< bool_pack< true, Bs... >,
+                       bool_pack< Bs..., true > >::value;
 }
 
 
+namespace states
+{
 // Core states definitions
-enum class core_states
+enum class nominal
 {
-    p,
-    v,
-    q,
-    ba,
-    bw
+  position,
+  velocity,
+  attitude,
+  bias_acc,
+  bias_gyro
 };
 
-enum class core_error_states
+enum class error
 {
-    p,
-    v,
-    q,
-    ba,
-    bw
+  position,
+  velocity,
+  attitude,
+  bias_acc,
+  bias_gyro
 };
-
+}
 
 // Tag to easily detect the base class
 struct sensor_base_tag {};
@@ -55,9 +57,12 @@ template <std::size_t MEASUREMENT_SIZE,
           std::size_t NUM_ROTATION_STATES>
 struct sensor_base : sensor_base_tag
 {
-  using measurement_vector_size = std::integral_constant< std::size_t, MEASUREMENT_SIZE >;
-  using num_linear_states = std::integral_constant< std::size_t, NUM_LINEAR_STATES >;
-  using num_rotation_states = std::integral_constant< std::size_t, NUM_ROTATION_STATES >;
+  using measurement_vector_size =
+      std::integral_constant< std::size_t, MEASUREMENT_SIZE >;
+  using num_linear_states =
+      std::integral_constant< std::size_t, NUM_LINEAR_STATES >;
+  using num_rotation_states =
+      std::integral_constant< std::size_t, NUM_ROTATION_STATES >;
 };
 
 // msf2 specs, takes a list of unique sensors
@@ -98,35 +103,39 @@ public:
   template <typename T>
   constexpr std::size_t get()
   {
-      static_assert(std::is_base_of<sensor_base_tag, T>::value,
-                    "Only sensors and state enums can be an argument in get< ... >().");
-      static_assert(T::num_linear_states::value > 0,
-                    "Can't get sensor state, this sensor has no extra linear states defined.");
+    static_assert(
+        std::is_base_of< sensor_base_tag, T >::value,
+        "Only sensors and state enums can be an argument in get< ... >().");
+    static_assert(T::num_linear_states::value > 0,
+                  "Can't get sensor state, this sensor has no extra linear "
+                  "states defined.");
 
-      return 9001;
+    return 9001;
   }
 
-  template <typename T>
+  template < typename T >
   constexpr std::size_t get_rot()
   {
-      static_assert(std::is_base_of<sensor_base_tag, T>::value,
-                    "Only sensors and state enums can be an argument in get< ... >().");
-      static_assert(T::num_rotation_states::value > 0,
-                    "Can't get sensor state, this sensor has no extra rotation states defined.");
+    static_assert(
+        std::is_base_of< sensor_base_tag, T >::value,
+        "Only sensors and state enums can be an argument in get< ... >().");
+    static_assert(T::num_rotation_states::value > 0,
+                  "Can't get sensor state, this sensor has no extra rotation "
+                  "states defined.");
 
-      return 10001;
+    return 10001;
   }
 
-  template <core_states T>
+  template < states::nominal T >
   constexpr std::size_t get()
   {
-      return 1;
+    return 1;
   }
 
-  template <core_error_states T>
+  template < states::error T >
   constexpr std::size_t get()
   {
-      return 2;
+    return 2;
   }
 };
 
@@ -159,11 +168,8 @@ int main()
 {
   msf my_msf;
 
-  my_msf.innovte(acc, gyro, dt);
-  my_msf.update< mysensor>( );
-
   // Try get stuff
-  std::cout << "val : " << my_msf.get< core::position >() << "\n";
+  std::cout << "val : " << my_msf.get_rot< sensor3 >() << "\n";
   std::cout << "val2: " << sizeof(sensor3) << "\n";
 
   return 0;
