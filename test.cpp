@@ -6,20 +6,44 @@
 #include <kvasir/mpl/mpl.hpp>
 
 // Helper functions
-using namespace kvasir;
+namespace mpl = kvasir::mpl;
 
 template <typename... Ts>
-using distinct = mpl::bool_<
-                  mpl::call<
-                    mpl::sort<
+using distinct =  mpl::call<
+                    mpl::stable_sort<
                       mpl::is_same<>,
                       mpl::remove_adjacent<
                         mpl::is_same<>,
-                        mpl::size<>
+                        mpl::size<
+                          mpl::same_as<
+                            mpl::uint_<sizeof...(Ts)>
+                          >
+                        >
                       >
                     >,
-                    Ts...
-                  >::value == mpl::call< mpl::size<>, Ts...>::value >;
+                    Ts...>;
+
+using distinct2 = mpl::stable_sort<
+                    mpl::is_same<>,
+                    mpl::remove_adjacent<
+                      mpl::is_same<>,
+                      mpl::size<>
+                    >
+                  >;
+
+template <typename... Ts>
+using dist = mpl::call<
+              mpl::fork<
+                mpl::size<>,
+                distinct2,
+                mpl::is_same<>
+              >, Ts... >;
+
+void test()
+{
+  distinct<int, float, int, double, char>::g;
+  dist<int, float, int, double, char>::g;
+}
 
 template<std::size_t... S>
 constexpr std::size_t sum()
@@ -131,6 +155,18 @@ private:
 
 public:
   // Convenience functions to get parts of state vector
+  template < states::nominal T >
+  constexpr std::size_t get()
+  {
+    return 1;
+  }
+
+  template < states::error T >
+  constexpr std::size_t get()
+  {
+    return 2;
+  }
+
   template <typename T>
   constexpr std::size_t get()
   {
@@ -155,18 +191,6 @@ public:
                   "states defined.");
 
     return 10001;
-  }
-
-  template < states::nominal T >
-  constexpr std::size_t get()
-  {
-    return 1;
-  }
-
-  template < states::error T >
-  constexpr std::size_t get()
-  {
-    return 2;
   }
 };
 
@@ -198,6 +222,7 @@ using msf = msf2< spec >;
 int main()
 {
   msf my_msf;
+
 
   // Try get stuff
   std::cout << "val : " << my_msf.get_rot< sensor3 >() << "\n";
