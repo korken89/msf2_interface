@@ -23,20 +23,18 @@ using distinct =  mpl::call<
                     >,
                     Ts...>;
 
-using distinct2 = mpl::stable_sort<
-                    mpl::is_same<>,
-                    mpl::remove_adjacent<
-                      mpl::is_same<>,
-                      mpl::size<>
-                    >
-                  >;
-
 template <typename... Ts>
 using dist = mpl::call<
               mpl::fork<
-                mpl::size<>,
-                distinct2,
-                mpl::is_same<>
+                mpl::size<>,        // Fork 1: size of input
+                mpl::stable_sort<   // Fork 2: size of unique list
+                  mpl::is_same<>,
+                  mpl::remove_adjacent<
+                    mpl::is_same<>,
+                    mpl::size<>
+                  >
+                >,
+                mpl::is_same<>      // Check if the sizes are the same
               >, Ts... >;
 
 void test()
