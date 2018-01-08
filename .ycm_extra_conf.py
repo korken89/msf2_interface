@@ -43,7 +43,7 @@ flags = [
     '-x',
     'c++',
     '-std=c++14',
-    '-I../kvasir-mpl/src',
+    '-I./deps/mpl/src',
 ]
 
 
