@@ -9,7 +9,7 @@
 namespace mpl = kvasir::mpl;
 
 template <typename... Ts>
-using distinct =  mpl::call<
+using distinct2 = mpl::call<
                     mpl::stable_sort<
                       mpl::is_same<>,
                       mpl::remove_adjacent<
@@ -23,24 +23,32 @@ using distinct =  mpl::call<
                     >,
                     Ts...>;
 
-template <typename... Ts>
-using dist = mpl::call<
-              mpl::fork<
-                mpl::size<>,        // Fork 1: size of input
-                mpl::stable_sort<   // Fork 2: size of unique list
-                  mpl::is_same<>,
-                  mpl::remove_adjacent<
-                    mpl::is_same<>,
-                    mpl::size<>
-                  >
-                >,
-                mpl::is_same<>      // Check if the sizes are the same
-              >, Ts... >;
+
+template <typename C = mpl::identity>
+using distinct = mpl::fork<
+                    mpl::size<>,        // Fork 1: size of input
+                    mpl::stable_sort<   // Fork 2: size of unique list
+                      mpl::is_same<>,
+                      mpl::remove_adjacent<
+                        mpl::is_same<>,
+                        mpl::size<>
+                      >
+                    >,
+                    mpl::is_same<       // Check if the sizes are the same
+                      C                 // Continuation
+                    >
+                  >;
+
+namespace eager
+{
+template <typename List>
+using distinct = mpl::call< mpl::unpack< distinct<> > , List >;
+}
 
 void test()
 {
-  distinct<int, float, int, double, char>::g;
-  dist<int, float, int, double, char>::g;
+  //distinct2<int, float, int, double, char>::g;
+  mpl::eager::distinct<mpl::list<int, float, int, double, char>>::g;
 }
 
 template<std::size_t... S>
@@ -120,7 +128,7 @@ struct msf2_specs
 
   // Check that input list is contains only unique sensors
   static_assert(
-      distinct< Sensors... >::value,
+      mpl::eager::distinct< mpl::list<Sensors...> >::value,
       "The list does not only contain unique sensors, remove duplicates.");
 
   // Define state sizes
