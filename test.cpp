@@ -8,50 +8,34 @@
 // Helper functions
 namespace mpl = kvasir::mpl;
 
-template <typename... Ts>
-using distinct2 = mpl::call<
-                    mpl::stable_sort<
-                      mpl::is_same<>,
-                      mpl::remove_adjacent<
-                        mpl::is_same<>,
-                        mpl::size<
-                          mpl::same_as<
-                            mpl::uint_<sizeof...(Ts)>
-                          >
-                        >
-                      >
-                    >,
-                    Ts...>;
-
-
-template <typename C = mpl::identity>
-using distinct = mpl::fork<
-                    mpl::size<>,        // Fork 1: size of input
-                    mpl::stable_sort<   // Fork 2: size of unique list
-                      mpl::is_same<>,
-                      mpl::remove_adjacent<
-                        mpl::is_same<>,
-                        mpl::size<>
-                      >
-                    >,
-                    mpl::is_same<       // Check if the sizes are the same
-                      C                 // Continuation
-                    >
-                  >;
+template < typename Comp = mpl::is_same<>, typename IsSame = mpl::is_same<>,
+           typename C = mpl::identity >
+using distinct =
+    mpl::fork< mpl::size<>,               // Fork 1: size of input
+               mpl::stable_sort<          // Fork 2: size of unique list
+                   Comp,                  // Comparison for sorting the list
+                   mpl::remove_adjacent<  // Remove non unique items
+                       IsSame,            // Comparison for uniqueness
+                       mpl::size<>        // Get the size
+                       > >,
+               mpl::is_same<  // Check if the sizes are the same
+                   C          // Continuation
+                   > >;
 
 namespace eager
 {
-template <typename List>
-using distinct = mpl::call< mpl::unpack< distinct<> > , List >;
+template < typename List, typename Comp = mpl::is_same<>,
+           typename IsSame = mpl::is_same<> >
+using distinct = mpl::call< mpl::unpack< distinct< Comp, IsSame > >, List >;
 }
 
 void test()
 {
-  //distinct2<int, float, int, double, char>::g;
-  mpl::eager::distinct<mpl::list<int, float, int, double, char>>::g;
+  // distinct2<int, float, int, double, char>::g;
+  eager::distinct< mpl::list< int, float, int, double, char > >::g;
 }
 
-template<std::size_t... S>
+template < std::size_t... S >
 constexpr std::size_t sum()
 {
   std::size_t result = 0;
@@ -62,16 +46,17 @@ constexpr std::size_t sum()
   return result;
 }
 
-template <bool... >
-struct bool_pack {};
+template < bool... >
+struct bool_pack
+{
+};
 
-template< bool... Bs>
+template < bool... Bs >
 constexpr bool all_true()
 {
   return std::is_same< bool_pack< true, Bs... >,
                        bool_pack< Bs..., true > >::value;
 }
-
 
 namespace states
 {
@@ -96,12 +81,13 @@ enum class error
 }
 
 // Tag to easily detect the base class
-struct sensor_base_tag {};
+struct sensor_base_tag
+{
+};
 
 // A sensor needs to include ...
-template <std::size_t MeasurementSize,
-          std::size_t NumLinearStates = 0,
-          std::size_t NumRotationStates = 0>
+template < std::size_t MeasurementSize, std::size_t NumLinearStates = 0,
+           std::size_t NumRotationStates = 0 >
 struct sensor_base : sensor_base_tag
 {
   using measurement_vector_size =
@@ -113,7 +99,7 @@ struct sensor_base : sensor_base_tag
 };
 
 // msf2 specs, takes a list of unique sensors
-template <typename... Sensors>
+template < typename... Sensors >
 struct msf2_specs
 {
   // Check that input list is contains only unique sensors
@@ -128,7 +114,7 @@ struct msf2_specs
 
   // Check that input list is contains only unique sensors
   static_assert(
-      mpl::eager::distinct< mpl::list<Sensors...> >::value,
+      mpl::call< distinct<>, Sensors... >::value,
       "The list does not only contain unique sensors, remove duplicates.");
 
   // Define state sizes
@@ -153,7 +139,7 @@ struct msf2_specs
   using sensor_storage_t = std::tuple< Sensors... >;
 };
 
-template <typename Spec>
+template < typename Spec >
 class msf2
 {
 private:
@@ -173,7 +159,7 @@ public:
     return 2;
   }
 
-  template <typename T>
+  template < typename T >
   constexpr std::size_t get()
   {
     static_assert(
@@ -200,22 +186,15 @@ public:
   }
 };
 
-
-
-
 // Make some sensors (one file/sensor, not made here)
 // Fake sensor, just to make it happy
-using sensor1 = sensor_base<1,  // Measurement size (1)
-                            0,  // Number of extra linear states
-                            0>; // Number of extra rotational states
-                                //              (1 state = 1 extra quaternion)
-using sensor2 = sensor_base<3,
-                            1,
-                            0>;
+using sensor1 = sensor_base< 1,    // Measurement size (1)
+                             0,    // Number of extra linear states
+                             0 >;  // Number of extra rotational states (1 state
+                                   // = 1 extra quaternion)
+using sensor2 = sensor_base< 3, 1, 0 >;
 
-using sensor3 = sensor_base<1,
-                            1,
-                            1>;
+using sensor3 = sensor_base< 1, 1, 1 >;
 
 // Create an MSF specification from it
 using spec = msf2_specs< sensor1, sensor2, sensor3 >;
@@ -228,7 +207,6 @@ using msf = msf2< spec >;
 int main()
 {
   msf my_msf;
-
 
   // Try get stuff
   std::cout << "val : " << my_msf.get_rot< sensor3 >() << "\n";
