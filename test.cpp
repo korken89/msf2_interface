@@ -90,12 +90,20 @@ template < std::size_t MeasurementSize, std::size_t NumLinearStates = 0,
            std::size_t NumRotationStates = 0 >
 struct sensor_base : sensor_base_tag
 {
-  using measurement_vector_size =
-      std::integral_constant< std::size_t, MeasurementSize >;
-  using num_linear_states =
-      std::integral_constant< std::size_t, NumLinearStates >;
-  using num_rotation_states =
-      std::integral_constant< std::size_t, NumRotationStates >;
+  static constexpr auto measurement_vector_size()
+  {
+    return std::integral_constant< std::size_t, MeasurementSize >{};
+  }
+
+  static constexpr auto num_linear_states()
+  {
+    return std::integral_constant< std::size_t, NumLinearStates >{};
+  }
+
+  static constexpr auto num_rotation_states()
+  {
+    return std::integral_constant< std::size_t, NumRotationStates >{};
+  }
 };
 
 // msf2 specs, takes a list of unique sensors
@@ -122,17 +130,15 @@ struct msf2_specs
   using num_core_error_states = std::integral_constant< std::size_t, 15 >;
   using num_sensor_states     = std::integral_constant<
       std::size_t,
-      sum< Sensors::num_linear_states::value... >() +  // Get num linear state
-          4 * sum< Sensors::num_rotation_states::value... >()  // Get num
-                                                               // rotational
-                                                               // states
+      sum< Sensors::num_linear_states()... >() +  // Get num linear state
+          4 * sum< Sensors::num_rotation_states()... >()  // Get num rotational
+                                                          // states
       >;
   using num_sensor_error_states = std::integral_constant<
       std::size_t,
-      sum< Sensors::num_linear_states::value... >() +  // Get num linear state
-          3 * sum< Sensors::num_rotation_states::value... >()  // Get num
-                                                               // rotational
-                                                               // states
+      sum< Sensors::num_linear_states()... >() +  // Get num linear state
+          3 * sum< Sensors::num_rotation_states()... >()  // Get num rotational
+                                                          // states
       >;
 
   // Storage for sensors with state
@@ -165,7 +171,7 @@ public:
     static_assert(
         std::is_base_of< sensor_base_tag, T >::value,
         "Only sensors and state enums can be an argument in get< ... >().");
-    static_assert(T::num_linear_states::value > 0,
+    static_assert(T::num_linear_states() > 0,
                   "Can't get sensor state, this sensor has no extra linear "
                   "states defined.");
 
@@ -178,7 +184,7 @@ public:
     static_assert(
         std::is_base_of< sensor_base_tag, T >::value,
         "Only sensors and state enums can be an argument in get< ... >().");
-    static_assert(T::num_rotation_states::value > 0,
+    static_assert(T::num_rotation_states() > 0,
                   "Can't get sensor state, this sensor has no extra rotation "
                   "states defined.");
 
@@ -186,15 +192,22 @@ public:
   }
 };
 
-// Make some sensors (one file/sensor, not made here)
-// Fake sensor, just to make it happy
-using sensor1 = sensor_base< 1,    // Measurement size (1)
-                             0,    // Number of extra linear states
-                             0 >;  // Number of extra rotational states (1 state
+// Make some sensors
+// Fake sensors, just to make it happy
+struct sensor1 : sensor_base< 1,   // Measurement size (1)
+                              0,   // Number of extra linear states
+                              0 >  // Number of extra rotational states (1 state
                                    // = 1 extra quaternion)
-using sensor2 = sensor_base< 3, 1, 0 >;
+{
+};
 
-using sensor3 = sensor_base< 1, 1, 1 >;
+struct sensor2 : sensor_base< 3, 1, 0 >
+{
+};
+
+struct sensor3 : sensor_base< 1, 1, 1 >
+{
+};
 
 // Create an MSF specification from it
 using spec = msf2_specs< sensor1, sensor2, sensor3 >;
