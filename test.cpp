@@ -32,7 +32,7 @@ using distinct = mpl::call< mpl::unpack< distinct< Comp, IsSame > >, List >;
 void test()
 {
   // distinct2<int, float, int, double, char>::g;
-  eager::distinct< mpl::list< int, float, int, double, char > >::g;
+  // eager::distinct< mpl::list< int, float, int, double, char > >::g;
 }
 
 template < std::size_t... S >
@@ -100,7 +100,7 @@ struct sensor_base : sensor_base_tag
     return std::integral_constant< std::size_t, NumLinearStates >{};
   }
 
-  static constexpr auto num_rotation_states()
+  static constexpr auto num_quaternion_states()
   {
     return std::integral_constant< std::size_t, NumRotationStates >{};
   }
@@ -110,7 +110,7 @@ struct sensor_base : sensor_base_tag
 template < typename... Sensors >
 struct msf2_specs
 {
-  // Check that input list is contains only unique sensors
+  // Check that input list is existing
   static_assert(sizeof...(Sensors) > 0,
                 "There are no sensors defined and there must be at least one.");
 
@@ -125,31 +125,35 @@ struct msf2_specs
       mpl::call< distinct<>, Sensors... >::value,
       "The list does not only contain unique sensors, remove duplicates.");
 
-  // Define state sizes
-  using num_core_states       = std::integral_constant< std::size_t, 16 >;
-  using num_core_error_states = std::integral_constant< std::size_t, 15 >;
-  using num_sensor_states     = std::integral_constant<
+  // Define core state sizes
+  using num_core_states = std::integral_constant< std::size_t, 16 >;
+  using num_sensor_states = std::integral_constant<
       std::size_t,
       sum< Sensors::num_linear_states()... >() +  // Get num linear state
-          4 * sum< Sensors::num_rotation_states()... >()  // Get num rotational
-                                                          // states
+          4 * sum< Sensors::num_quaternion_states()... >()  // Get num
+                                                            // rotational
+                                                            // states
       >;
+
+  // Define error state sizes
+  using num_core_error_states = std::integral_constant< std::size_t, 15 >;
   using num_sensor_error_states = std::integral_constant<
       std::size_t,
       sum< Sensors::num_linear_states()... >() +  // Get num linear state
-          3 * sum< Sensors::num_rotation_states()... >()  // Get num rotational
-                                                          // states
+          3 * sum< Sensors::num_quaternion_states()... >()  // Get num
+                                                            // rotational
+                                                            // states
       >;
 
   // Storage for sensors with state
-  using sensor_storage_t = std::tuple< Sensors... >;
+  using sensor_storage = std::tuple< Sensors... >;
 };
 
 template < typename Spec >
 class msf2
 {
 private:
-  typename Spec::sensor_storage_t sensor_storage;
+  typename Spec::sensor_storage sensor_storage;
 
 public:
   // Convenience functions to get parts of state vector
@@ -166,11 +170,10 @@ public:
   }
 
   template < typename T >
-  constexpr std::size_t get()
+  constexpr std::size_t get_linear()
   {
-    static_assert(
-        std::is_base_of< sensor_base_tag, T >::value,
-        "Only sensors and state enums can be an argument in get< ... >().");
+    static_assert(std::is_base_of< sensor_base_tag, T >::value,
+                  "Only sensors can be an argument in get_linear< ... >().");
     static_assert(T::num_linear_states() > 0,
                   "Can't get sensor state, this sensor has no extra linear "
                   "states defined.");
@@ -179,13 +182,12 @@ public:
   }
 
   template < typename T >
-  constexpr std::size_t get_rot()
+  constexpr std::size_t get_rotation()
   {
-    static_assert(
-        std::is_base_of< sensor_base_tag, T >::value,
-        "Only sensors and state enums can be an argument in get< ... >().");
-    static_assert(T::num_rotation_states() > 0,
-                  "Can't get sensor state, this sensor has no extra rotation "
+    static_assert(std::is_base_of< sensor_base_tag, T >::value,
+                  "Only sensors can be an argument in get_rotation< ... >().");
+    static_assert(T::num_quaternion_states() > 0,
+                  "Can't get sensor state, this sensor has no extra quaternion "
                   "states defined.");
 
     return 10001;
@@ -222,7 +224,7 @@ int main()
   msf my_msf;
 
   // Try get stuff
-  std::cout << "val : " << my_msf.get_rot< sensor3 >() << "\n";
+  std::cout << "val : " << my_msf.get_rotation< sensor3 >() << "\n";
   std::cout << "val2: " << sizeof(sensor3) << "\n";
 
   return 0;
